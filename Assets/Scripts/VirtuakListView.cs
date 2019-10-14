@@ -105,20 +105,27 @@ public class VirtuakListView : ScrollRect
             }
         }
 
-        Vector2 columnAndRow = CalculateVisibleColumnAndRow();
-        m_visibleColumn = (int)columnAndRow.x;
-        m_visibleRow = (int)columnAndRow.y;
-        if (ScrollType == ListScrollType.Horizontal)
+        if (viewport != null)
         {
-            m_visibleColumn += 1;
-        }
-        else
-        {
-            m_visibleRow += 1;
+            Vector2 columnAndRow = CalculateVisibleColumnAndRow();
+            m_visibleColumn = (int)columnAndRow.x;
+            m_visibleRow = (int)columnAndRow.y;
+            if (ScrollType == ListScrollType.Horizontal)
+            {
+                m_visibleColumn += 1;
+            }
+            else
+            {
+                m_visibleRow += 1;
+            } 
         }
         Debug.LogFormat("Col:{0},Row:{1}", m_visibleColumn, m_visibleRow);
 
-        SetItemCount_Inner();
+        if (content != null)
+        {
+            SetItemCount_Inner(); 
+        }
+
         if (m_templet != null && Application.isPlaying)
         {
             RebuildVisibleItems();
