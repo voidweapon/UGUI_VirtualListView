@@ -271,7 +271,7 @@ public class VirtuakListView : ScrollRect
         }
         else
         {
-            float height = content.rect.height;
+            float height = viewport.rect.height;
             int cellCountY = Mathf.Max(1, Mathf.FloorToInt((height - padding.vertical + spacing.x + 0.001f) / (cellSize.y + spacing.y)));
             maxColumns = Mathf.CeilToInt(itemCount / (float)cellCountY);
             maxRows = cellCountY;
@@ -281,7 +281,7 @@ public class VirtuakListView : ScrollRect
         m_maxRow = maxRows;
         m_maxColumn = maxColumns;
 
-        return new Vector2(weight, content.rect.height);
+        return new Vector2(weight, viewport.rect.height);
     }
 
     private Vector2 CalculateContentSizeVertical(int itemCount)
@@ -301,7 +301,7 @@ public class VirtuakListView : ScrollRect
         }
         else
         {
-            float width = content.rect.width;
+            float width = viewport.rect.width;
             int cellCountX = Mathf.Max(1, Mathf.FloorToInt((width - padding.horizontal + spacing.x + 0.001f) / (cellSize.x + spacing.x)));
             Debug.LogFormat("width:{0}, {1}", width, cellCountX);
             maxRows = Mathf.CeilToInt(itemCount / (float)cellCountX);
@@ -312,7 +312,7 @@ public class VirtuakListView : ScrollRect
         m_maxRow = maxRows;
         m_maxColumn = maxColumns;
 
-        return new Vector2(content.rect.width, height);
+        return new Vector2(viewport.rect.width, height);
     } 
     #endregion
 
