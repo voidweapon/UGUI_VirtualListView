@@ -8,6 +8,8 @@ namespace UnityEditor.UI
     [CanEditMultipleObjects]
     public class VirtuakListViewEditor : ScrollRectEditor
     {
+        SerializedProperty m_Horizontal;
+        SerializedProperty m_Vertical;
         SerializedProperty m_Padding;
         SerializedProperty m_CellSize;
         SerializedProperty m_Spacing;
@@ -22,6 +24,8 @@ namespace UnityEditor.UI
         protected override void OnEnable()
         {
             base.OnEnable();
+            m_Horizontal = serializedObject.FindProperty("m_Horizontal");
+            m_Vertical = serializedObject.FindProperty("m_Vertical");
             m_Padding = serializedObject.FindProperty("m_Padding");
             m_CellSize = serializedObject.FindProperty("m_CellSize");
             m_Spacing = serializedObject.FindProperty("m_Spacing");
@@ -54,6 +58,19 @@ namespace UnityEditor.UI
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_ConstraintCount, true);
                 EditorGUI.indentLevel--;
+            }
+
+            if(m_scrollType.enumValueIndex == 0)
+            {
+                m_Horizontal.boolValue = true;
+                m_Vertical.boolValue = false;
+                m_StartAxis.enumValueIndex = 1;
+            }
+            else
+            {
+                m_Horizontal.boolValue = false;
+                m_Vertical.boolValue = true;
+                m_StartAxis.enumValueIndex = 0;
             }
             serializedObject.ApplyModifiedProperties();
         }

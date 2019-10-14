@@ -30,7 +30,7 @@ public class VirtuakListView : ScrollRect
     public GridLayoutGroup.Corner startCorner { get { return m_StartCorner; } set { SetProperty(ref m_StartCorner, value); } }
 
     [SerializeField] protected GridLayoutGroup.Axis m_StartAxis = GridLayoutGroup.Axis.Horizontal;
-    public GridLayoutGroup.Axis startAxis { get { return m_StartAxis; } set { SetProperty(ref m_StartAxis, value); } }
+    public GridLayoutGroup.Axis startAxis { get { return m_StartAxis; }  }
 
     [SerializeField] protected Vector2 m_CellSize = new Vector2(100, 100);
     public Vector2 cellSize { get { return m_CellSize; } set { SetProperty(ref m_CellSize, value); } }
@@ -341,14 +341,17 @@ public class VirtuakListView : ScrollRect
             case ListScrollType.Horizontal:
                 horizontal = true;
                 vertical = false;
+                m_StartAxis = GridLayoutGroup.Axis.Vertical;
                 break;
             case ListScrollType.Vertical:
                 horizontal = false;
                 vertical = true;
+                m_StartAxis = GridLayoutGroup.Axis.Horizontal;
                 break;
             default:
                 break;
         }
+        SetDirty();
     }
 
     protected void SetProperty<T>(ref T currentValue, T newValue)
