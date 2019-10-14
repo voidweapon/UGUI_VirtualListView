@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [SelectionBase]
-[ExecuteInEditMode]
+//[ExecuteInEditMode]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
 public class VirtuakListView : ScrollRect
@@ -55,17 +55,18 @@ public class VirtuakListView : ScrollRect
     [SerializeField]
     [HideInInspector]
     private int m_itemCount;
-    private int ItemCount { get { return m_itemCount; } set { m_itemCount = value; SetItemCount_Inner(); } }
+    private int ItemCount { get { return m_itemCount; } set { SetItemCount(value); } }
 
     private List<RectTransform> m_items = new List<RectTransform>();
     private LinkedList<VisibleWindowItem> m_visibleWindow = new LinkedList<VisibleWindowItem>();
+
     private int m_maxColumn = 1;
     private int m_maxRow = 1;
     private Vector2 m_contentOrignPosition;
 
-    protected override void Awake()
+    protected override void Start()
     {
-        base.Awake();
+        base.Start();
 
         m_contentOrignPosition = content.anchoredPosition;
 
@@ -81,8 +82,10 @@ public class VirtuakListView : ScrollRect
             m_visibleRow += 1;
         }
 
-        if (m_templet != null)
+        SetItemCount_Inner();
+        if (m_templet != null && Application.isPlaying)
         {
+            Debug.Log("Awake");
             RebuildVisibleItems();
         }
     }
@@ -91,8 +94,16 @@ public class VirtuakListView : ScrollRect
     protected override void OnValidate()
     {
         base.OnValidate();
+        if (!IsActive())
+            return;
 
-        SetItemCount_Inner();
+        for (int i = m_items.Count - 1; i >= 0; i--)
+        {
+            if (m_items[i] == null)
+            {
+                m_items.RemoveAt(i);
+            }
+        }
 
         Vector2 columnAndRow = CalculateVisibleColumnAndRow();
         m_visibleColumn = (int)columnAndRow.x;
@@ -107,15 +118,8 @@ public class VirtuakListView : ScrollRect
         }
         Debug.LogFormat("Col:{0},Row:{1}", m_visibleColumn, m_visibleRow);
 
-        for (int i = m_items.Count - 1; i >= 0; i--)
-        {
-            if(m_items[i] == null)
-            {
-                m_items.RemoveAt(i);
-            }
-        }
-
-        if (m_templet != null)
+        SetItemCount_Inner();
+        if (m_templet != null && Application.isPlaying)
         {
             RebuildVisibleItems();
         }
@@ -170,9 +174,15 @@ public class VirtuakListView : ScrollRect
         {
             Vector2 postion = CalculateItemPostion(m_maxColumn, m_maxRow, i);
             m_items[i].localPosition = postion;
-            m_items[i].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, postion.x, cellSize.x);
-            m_items[i].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, postion.y, cellSize.y);          
+            //SetItem Position
+            SetItemPosition(m_items[i], postion, cellSize);        
         }
+    }
+
+    private void SetItemPosition(RectTransform rect, Vector2 pos, Vector2 size)
+    {
+        rect.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, pos.x, size.x);
+        rect.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, pos.y, size.y);
     }
 
     private void OnViewPointChange()
@@ -184,13 +194,16 @@ public class VirtuakListView : ScrollRect
     {
         m_itemCount = count;
         SetItemCount_Inner();
+        if (m_templet != null)
+        {
+            RebuildVisibleItems();
+        }
     }
     private void SetItemCount_Inner()
     {
         Vector2 contentSize = CalculateContentSize(m_itemCount);
         content.sizeDelta = contentSize;
     }
-
 
     Vector2 CalculateItemPostion(int maxColumn, int maxRow, int index)
     {
@@ -298,7 +311,7 @@ public class VirtuakListView : ScrollRect
 
     private Vector2 CalculateVisibleColumnAndRow()
     {
-        Vector2 viewPointSize = viewport.sizeDelta;
+        Vector2 viewPointSize = viewport.rect.size;
         int column;
         int row;
         if(ScrollType == ListScrollType.Horizontal)
@@ -354,7 +367,10 @@ public class VirtuakListView : ScrollRect
 
     private void OnContentPositionChanged()
     {
+        if (!Application.isPlaying) return;
+
         Vector2 moveDistance = content.anchoredPosition - m_contentOrignPosition;
+
         float distance = 0f;
         float padding = 0f;
         float spacing = 0f;
@@ -397,8 +413,7 @@ public class VirtuakListView : ScrollRect
                 m_visibleWindow.RemoveFirst();
                 m_visibleWindow.AddLast(newVisibleWindowItem);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
-                m_items[newVisibleWindowItem.visibleObjIindex].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, newPosition.x, cellSize.x);
-                m_items[newVisibleWindowItem.visibleObjIindex].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, newPosition.y, cellSize.y);
+                SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
         }
         else if (newVisibleWindow[0] < currentVisibleWindow[0])
@@ -413,8 +428,7 @@ public class VirtuakListView : ScrollRect
                 m_visibleWindow.RemoveLast();
                 m_visibleWindow.AddFirst(newVisibleWindowItem);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
-                m_items[newVisibleWindowItem.visibleObjIindex].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, newPosition.x, cellSize.x);
-                m_items[newVisibleWindowItem.visibleObjIindex].SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, newPosition.y, cellSize.y);
+                SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
         }
         Debug.LogFormat("passed:{0}, showEnd:{1}", Mathf.Min(passedItemCount, m_itemCount),
