@@ -21,6 +21,8 @@ namespace UnityEditor.UI
         SerializedProperty m_templet;
         SerializedProperty m_scrollType;
         SerializedProperty m_itemCount;
+        SerializedProperty m_OnShowNewItem;
+        SerializedProperty m_OnHideItem;
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -37,6 +39,8 @@ namespace UnityEditor.UI
             m_templet = serializedObject.FindProperty("m_templet");
             m_scrollType = serializedObject.FindProperty("m_scrollType");
             m_itemCount = serializedObject.FindProperty("m_itemCount");
+            m_OnShowNewItem = serializedObject.FindProperty("m_OnShowNewItem");
+            m_OnHideItem = serializedObject.FindProperty("m_OnHideItem");
         }
 
         public override void OnInspectorGUI()
@@ -53,6 +57,8 @@ namespace UnityEditor.UI
             //EditorGUILayout.PropertyField(m_StartAxis, true);
             //EditorGUILayout.PropertyField(m_ChildAlignment, true);
             EditorGUILayout.PropertyField(m_Constraint, true);
+            EditorGUILayout.PropertyField(m_OnShowNewItem, true);
+            EditorGUILayout.PropertyField(m_OnHideItem, true);
             if (m_Constraint.enumValueIndex > 0)
             {
                 EditorGUI.indentLevel++;

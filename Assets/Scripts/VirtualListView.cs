@@ -14,7 +14,7 @@ using UnityEngine.UI;
 public class VirtualListView : ScrollRect
 {
     [Serializable]
-    public class VirtualListViewEvent : UnityEvent<int> { }
+    public class VirtualListViewEvent : UnityEvent<int, GameObject> { }
 
     public enum ListScrollType
     {
@@ -80,9 +80,9 @@ public class VirtualListView : ScrollRect
 
     private Vector2 m_moveAccumulated;
 
-    protected override void Start()
+    protected override void Awake()
     {
-        base.Start();
+        base.Awake();
 
         m_contentOrignPosition = content.anchoredPosition;
         m_moveAccumulated = m_contentOrignPosition;
@@ -186,6 +186,7 @@ public class VirtualListView : ScrollRect
                 dataIndex = i,
                 visibleObjIindex = i,
             });
+            onShowNewItem.Invoke(i, m_items[i].gameObject);
         }
         for (int i = requireItemCount; i < m_items.Count; i++)
         {
@@ -436,10 +437,10 @@ public class VirtualListView : ScrollRect
                     dataIndex = m_visibleWindow.Last.Value.dataIndex + 1,
                     visibleObjIindex = m_visibleWindow.First.Value.visibleObjIindex,
                 };
-                onHideItem.Invoke(m_visibleWindow.First.Value.dataIndex);
+                onHideItem.Invoke(m_visibleWindow.First.Value.dataIndex, m_items[m_visibleWindow.First.Value.visibleObjIindex].gameObject);
                 m_visibleWindow.RemoveFirst();
                 m_visibleWindow.AddLast(newVisibleWindowItem);
-                onShowNewItem.Invoke(m_visibleWindow.Last.Value.dataIndex);
+                onShowNewItem.Invoke(m_visibleWindow.Last.Value.dataIndex, m_items[m_visibleWindow.Last.Value.visibleObjIindex].gameObject);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
                 SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
@@ -453,10 +454,10 @@ public class VirtualListView : ScrollRect
                     dataIndex = m_visibleWindow.First.Value.dataIndex - 1,
                     visibleObjIindex = m_visibleWindow.Last.Value.visibleObjIindex,
                 };
-                onHideItem.Invoke(m_visibleWindow.Last.Value.dataIndex);
+                onHideItem.Invoke(m_visibleWindow.Last.Value.dataIndex, m_items[m_visibleWindow.Last.Value.visibleObjIindex].gameObject);
                 m_visibleWindow.RemoveLast();
                 m_visibleWindow.AddFirst(newVisibleWindowItem);
-                onShowNewItem.Invoke(m_visibleWindow.First.Value.dataIndex);
+                onShowNewItem.Invoke(m_visibleWindow.First.Value.dataIndex, m_items[m_visibleWindow.First.Value.visibleObjIindex].gameObject);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
                 SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
