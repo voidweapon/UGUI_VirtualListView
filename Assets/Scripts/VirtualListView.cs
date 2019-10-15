@@ -65,11 +65,14 @@ public class VirtualListView : ScrollRect
     private int m_maxRow = 1;
     private Vector2 m_contentOrignPosition;
 
+    private Vector2 m_moveAccumulated;
+
     protected override void Start()
     {
         base.Start();
 
         m_contentOrignPosition = content.anchoredPosition;
+        m_moveAccumulated = m_contentOrignPosition;
 
         Vector2 columnAndRow = CalculateVisibleColumnAndRow();
         m_visibleColumn = (int)columnAndRow.x;
@@ -191,11 +194,6 @@ public class VirtualListView : ScrollRect
     {
         rect.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, pos.x, size.x);
         rect.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, pos.y, size.y);
-    }
-
-    private void OnViewPointChange()
-    {
-        RebuildVisibleItems();
     }
 
     public void SetItemCount(int count)
@@ -382,6 +380,9 @@ public class VirtualListView : ScrollRect
 
         Vector2 moveDistance = content.anchoredPosition - m_contentOrignPosition;
 
+        if ((content.anchoredPosition - m_moveAccumulated).sqrMagnitude < 1f) return;
+        m_moveAccumulated = content.anchoredPosition;
+
         float distance = 0f;
         float padding = 0f;
         float spacing = 0f;
@@ -444,8 +445,6 @@ public class VirtualListView : ScrollRect
                 SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
         }
-        Debug.LogFormat("passed:{0}, showEnd:{1}", Mathf.Min(passedItemCount, m_itemCount),
-            Mathf.Min(passedItemCount + m_visibleRow * m_visibleColumn, m_itemCount));
     }
 
     private struct VisibleWindowItem
