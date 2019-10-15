@@ -4,11 +4,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+[AddComponentMenu("ExtendUI/Virtual List View", 37)]
 [SelectionBase]
 //[ExecuteInEditMode]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
-public class VirtuakListView : ScrollRect
+public class VirtualListView : ScrollRect
 {
     public enum ListScrollType
     {
@@ -387,7 +388,8 @@ public class VirtuakListView : ScrollRect
         int passedItemCount = 0;
         if (ScrollType == ListScrollType.Horizontal)
         {
-            distance = moveDistance.x;
+            // Content move left to show next part item and move right to show previous part item.
+            distance = -moveDistance.x;
             padding = m_Padding.left;
             spacing = m_Spacing.x;
 
@@ -396,6 +398,7 @@ public class VirtuakListView : ScrollRect
         }
         else
         {
+            //Content move down to show next part item and move up to show previous part item.
             distance = moveDistance.y;
             padding = m_Padding.top;
             spacing = m_Spacing.y;

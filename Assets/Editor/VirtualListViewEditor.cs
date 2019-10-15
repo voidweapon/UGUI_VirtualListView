@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditor.UI
 {
-    [CustomEditor(typeof(VirtuakListView), true)]
+    [CustomEditor(typeof(VirtualListView), true)]
     [CanEditMultipleObjects]
     public class VirtuakListViewEditor : ScrollRectEditor
     {
@@ -41,7 +41,7 @@ namespace UnityEditor.UI
 
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+
             serializedObject.Update();
             EditorGUILayout.PropertyField(m_templet, true);
             EditorGUILayout.PropertyField(m_scrollType, true);
@@ -50,7 +50,7 @@ namespace UnityEditor.UI
             EditorGUILayout.PropertyField(m_CellSize, true);
             EditorGUILayout.PropertyField(m_Spacing, true);
             EditorGUILayout.PropertyField(m_StartCorner, true);
-            EditorGUILayout.PropertyField(m_StartAxis, true);
+            //EditorGUILayout.PropertyField(m_StartAxis, true);
             //EditorGUILayout.PropertyField(m_ChildAlignment, true);
             EditorGUILayout.PropertyField(m_Constraint, true);
             if (m_Constraint.enumValueIndex > 0)
@@ -72,7 +72,10 @@ namespace UnityEditor.UI
                 m_Vertical.boolValue = true;
                 m_StartAxis.enumValueIndex = 0;
             }
+            EditorGUILayout.Space();
             serializedObject.ApplyModifiedProperties();
+
+            base.OnInspectorGUI();
         }
     }
 }
