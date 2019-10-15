@@ -102,7 +102,6 @@ public class VirtualListView : ScrollRect
         SetItemCount_Inner();
         if (m_templet != null && Application.isPlaying)
         {
-            Debug.Log("Awake");
             RebuildVisibleItems();
         }
     }
@@ -136,7 +135,6 @@ public class VirtualListView : ScrollRect
                 m_visibleRow += 1;
             } 
         }
-        Debug.LogFormat("Col:{0},Row:{1}", m_visibleColumn, m_visibleRow);
 
         if (content != null)
         {
