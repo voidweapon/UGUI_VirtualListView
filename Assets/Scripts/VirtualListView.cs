@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -11,6 +13,9 @@ using UnityEngine.UI;
 [RequireComponent(typeof(RectTransform))]
 public class VirtualListView : ScrollRect
 {
+    [Serializable]
+    public class VirtualListViewEvent : UnityEvent<int> { }
+
     public enum ListScrollType
     {
         Horizontal,
@@ -57,6 +62,14 @@ public class VirtualListView : ScrollRect
     [HideInInspector]
     private int m_itemCount;
     private int ItemCount { get { return m_itemCount; } set { SetItemCount(value); } }
+
+    [SerializeField]
+    private VirtualListViewEvent m_OnShowNewItem = new VirtualListViewEvent();
+    public VirtualListViewEvent onShowNewItem { get { return m_OnShowNewItem; } set { m_OnShowNewItem = value; } }
+
+    [SerializeField]
+    private VirtualListViewEvent m_OnHideItem = new VirtualListViewEvent();
+    public VirtualListViewEvent onHideItem { get { return m_OnHideItem; } set { m_OnHideItem = value; } }
 
     private List<RectTransform> m_items = new List<RectTransform>();
     private LinkedList<VisibleWindowItem> m_visibleWindow = new LinkedList<VisibleWindowItem>();
@@ -423,9 +436,10 @@ public class VirtualListView : ScrollRect
                     dataIndex = m_visibleWindow.Last.Value.dataIndex + 1,
                     visibleObjIindex = m_visibleWindow.First.Value.visibleObjIindex,
                 };
-
+                onHideItem.Invoke(m_visibleWindow.First.Value.dataIndex);
                 m_visibleWindow.RemoveFirst();
                 m_visibleWindow.AddLast(newVisibleWindowItem);
+                onShowNewItem.Invoke(m_visibleWindow.Last.Value.dataIndex);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
                 SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
@@ -439,8 +453,10 @@ public class VirtualListView : ScrollRect
                     dataIndex = m_visibleWindow.First.Value.dataIndex - 1,
                     visibleObjIindex = m_visibleWindow.Last.Value.visibleObjIindex,
                 };
+                onHideItem.Invoke(m_visibleWindow.Last.Value.dataIndex);
                 m_visibleWindow.RemoveLast();
                 m_visibleWindow.AddFirst(newVisibleWindowItem);
+                onShowNewItem.Invoke(m_visibleWindow.First.Value.dataIndex);
                 Vector2 newPosition = CalculateItemPostion(m_maxColumn, m_maxRow, newVisibleWindowItem.dataIndex);
                 SetItemPosition(m_items[newVisibleWindowItem.visibleObjIindex], newPosition, cellSize);
             }
