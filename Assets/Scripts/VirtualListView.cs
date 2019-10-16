@@ -84,25 +84,28 @@ public class VirtualListView : ScrollRect
     {
         base.Awake();
 
-        m_contentOrignPosition = content.anchoredPosition;
-        m_moveAccumulated = m_contentOrignPosition;
+        if(content != null && viewport != null)
+        {
+            m_contentOrignPosition = content.anchoredPosition;
+            m_moveAccumulated = m_contentOrignPosition;
 
-        Vector2 columnAndRow = CalculateVisibleColumnAndRow();
-        m_visibleColumn = (int)columnAndRow.x;
-        m_visibleRow = (int)columnAndRow.y;
-        if (ScrollType == ListScrollType.Horizontal)
-        {
-            m_visibleColumn += 1;
-        }
-        else
-        {
-            m_visibleRow += 1;
-        }
+            Vector2 columnAndRow = CalculateVisibleColumnAndRow();
+            m_visibleColumn = (int)columnAndRow.x;
+            m_visibleRow = (int)columnAndRow.y;
+            if (ScrollType == ListScrollType.Horizontal)
+            {
+                m_visibleColumn += 1;
+            }
+            else
+            {
+                m_visibleRow += 1;
+            }
 
-        SetItemCount_Inner();
-        if (m_templet != null && Application.isPlaying)
-        {
-            RebuildVisibleItems();
+            SetItemCount_Inner();
+            if (m_templet != null && Application.isPlaying)
+            {
+                RebuildVisibleItems();
+            }
         }
     }
 
