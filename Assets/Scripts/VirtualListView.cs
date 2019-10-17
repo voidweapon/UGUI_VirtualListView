@@ -215,15 +215,29 @@ public class VirtualListView : ScrollRect
     {
         m_itemCount = count;
         SetItemCount_Inner();
+        Vector2 columnAndRow = CalculateVisibleColumnAndRow();
+        m_visibleColumn = (int)columnAndRow.x;
+        m_visibleRow = (int)columnAndRow.y;
+        if (ScrollType == ListScrollType.Horizontal)
+        {
+            m_visibleColumn += 1;
+        }
+        else
+        {
+            m_visibleRow += 1;
+        }
+        SetItemCount_Inner();
         if (m_templet != null)
         {
             RebuildVisibleItems();
         }
+        SetNormalizedPosition(0, (int)ScrollType);
     }
     private void SetItemCount_Inner()
     {
         Vector2 contentSize = CalculateContentSize(m_itemCount);
-        content.sizeDelta = contentSize;
+        content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, 0, contentSize.x);
+        content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0, contentSize.y);
     }
 
     Vector2 CalculateItemPostion(int maxColumn, int maxRow, int index)
