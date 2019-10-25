@@ -239,6 +239,18 @@ public class VirtualListView : ScrollRect
         content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, 0, contentSize.x);
         content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0, contentSize.y);
     }
+    public GameObject GetItem(int index)
+    {
+        foreach (var item in m_visibleWindow)
+        {
+            if (item.dataIndex == index)
+            {
+                return m_items[item.visibleObjIindex].gameObject;
+            }
+        }
+        return null;
+    }
+
 
     Vector2 CalculateItemPostion(int maxColumn, int maxRow, int index)
     {
