@@ -80,6 +80,23 @@ public class VirtualListView : ScrollRect
 
     private Vector2 m_moveAccumulated;
 
+    public int MinimumVisibleItemCount
+    {
+        get
+        {
+            var info = CalculateVisibleColumnAndRow();
+            int col = Mathf.FloorToInt(info.x);
+            int row = Mathf.FloorToInt(info.y);
+            var _ = ScrollType == ListScrollType.Horizontal ? --col : --row;
+            return col * row;
+        }
+    }
+
+    public int perfectVisibleItemCount
+    {
+        get { var info = CalculateVisibleColumnAndRow(); return Mathf.FloorToInt(info.x) * Mathf.FloorToInt(info.y); }
+    }
+
     protected override void Awake()
     {
         base.Awake();
