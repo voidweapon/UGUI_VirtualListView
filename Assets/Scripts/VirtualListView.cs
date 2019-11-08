@@ -434,7 +434,7 @@ public class VirtualListView : ScrollRect
 
     private void OnContentPositionChanged()
     {
-        if (!Application.isPlaying) return;
+        if (!Application.isPlaying || ItemCount == 0) return;
 
         Vector2 moveDistance = content.anchoredPosition - m_contentOrignPosition;
 
