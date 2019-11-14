@@ -87,7 +87,9 @@ public class VirtualListView : ScrollRect
             var info = CalculateVisibleColumnAndRow();
             int col = Mathf.FloorToInt(info.x);
             int row = Mathf.FloorToInt(info.y);
-            var _ = ScrollType == ListScrollType.Horizontal ? --row : --col;
+            var _ = ScrollType == ListScrollType.Horizontal ? --col : --row;
+            row = Mathf.Clamp(row, 0, row);
+            col = Mathf.Clamp(col, 0, col);
             return col * row;
         }
     }
