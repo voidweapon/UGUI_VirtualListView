@@ -23,6 +23,8 @@ namespace UnityEditor.UI
         SerializedProperty m_itemCount;
         SerializedProperty m_OnShowNewItem;
         SerializedProperty m_OnHideItem;
+        SerializedProperty m_VirtualVerticalScrollbar;
+        SerializedProperty m_VirtualHorizontalScrollbar;
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -41,6 +43,8 @@ namespace UnityEditor.UI
             m_itemCount = serializedObject.FindProperty("m_itemCount");
             m_OnShowNewItem = serializedObject.FindProperty("m_OnShowNewItem");
             m_OnHideItem = serializedObject.FindProperty("m_OnHideItem");
+            m_VirtualVerticalScrollbar = serializedObject.FindProperty("m_VirtualVerticalScrollbar");
+            m_VirtualHorizontalScrollbar = serializedObject.FindProperty("m_VirtualHorizontalScrollbar");
         }
 
         public override void OnInspectorGUI()
@@ -59,6 +63,8 @@ namespace UnityEditor.UI
             EditorGUILayout.PropertyField(m_Constraint, true);
             EditorGUILayout.PropertyField(m_OnShowNewItem, true);
             EditorGUILayout.PropertyField(m_OnHideItem, true);
+            EditorGUILayout.PropertyField(m_VirtualVerticalScrollbar, true);
+            EditorGUILayout.PropertyField(m_VirtualHorizontalScrollbar, true);
             if (m_Constraint.enumValueIndex > 0)
             {
                 EditorGUI.indentLevel++;

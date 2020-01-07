@@ -61,7 +61,7 @@ public class VirtualListView : ScrollRect
     [SerializeField]
     [HideInInspector]
     private int m_itemCount;
-    private int ItemCount { get { return m_itemCount; } set { SetItemCount(value); } }
+    public int ItemCount { get { return m_itemCount; } set { SetItemCount(value); } }
 
     [SerializeField]
     private VirtualListViewEvent m_OnShowNewItem = new VirtualListViewEvent();
@@ -71,6 +71,51 @@ public class VirtualListView : ScrollRect
     private VirtualListViewEvent m_OnHideItem = new VirtualListViewEvent();
     public VirtualListViewEvent onHideItem { get { return m_OnHideItem; } set { m_OnHideItem = value; } }
 
+    [SerializeField]
+    private VirtualListBar m_VirtualVerticalScrollbar;
+    public VirtualListBar VirtualVerticalScrollbar {
+        get
+        {
+            return m_VirtualVerticalScrollbar;
+        }
+        set
+        {
+            if (m_VirtualVerticalScrollbar != null)
+            {
+                m_VirtualVerticalScrollbar.onValueChanged.RemoveListener(OnVirtualVerticalScrollBarValueChange);
+            }
+            m_VirtualVerticalScrollbar = value;
+            if(m_VirtualVerticalScrollbar != null)
+            {
+                m_VirtualVerticalScrollbar.onValueChanged.AddListener(OnVirtualVerticalScrollBarValueChange);
+            }
+            SetDirtyCaching();
+        }
+    }
+
+    [SerializeField]
+    private VirtualListBar m_VirtualHorizontalScrollbar;
+    public VirtualListBar VirtualHorizontalScrollbar
+    {
+        get
+        {
+            return m_VirtualHorizontalScrollbar;
+        }
+        set
+        {
+            if (m_VirtualHorizontalScrollbar != null)
+            {
+                m_VirtualHorizontalScrollbar.onValueChanged.RemoveListener(OnVirtualHorizontalScrollBarValueChange);
+            }
+            m_VirtualHorizontalScrollbar = value;
+            if (m_VirtualHorizontalScrollbar != null)
+            {
+                m_VirtualHorizontalScrollbar.onValueChanged.AddListener(OnVirtualHorizontalScrollBarValueChange);
+            }
+            SetDirtyCaching();
+        }
+    }
+
     private List<RectTransform> m_items = new List<RectTransform>();
     private LinkedList<VisibleWindowItem> m_visibleWindow = new LinkedList<VisibleWindowItem>();
 
@@ -79,17 +124,26 @@ public class VirtualListView : ScrollRect
     private Vector2 m_contentOrignPosition;
 
     private Vector2 m_moveAccumulated;
+    private PointerEventData m_dragData = null;
 
-    public int MinimumVisibleItemCount
-    {
+    protected Bounds m_ViewportBounds;
+
+    public int MinimumVisibleItemCount {
         get
         {
             var info = CalculateVisibleColumnAndRow();
-            int col = Mathf.FloorToInt(info.x);
-            int row = Mathf.FloorToInt(info.y);
-            var _ = ScrollType == ListScrollType.Horizontal ? --col : --row;
-            row = Mathf.Clamp(row, 0, row);
-            col = Mathf.Clamp(col, 0, col);
+            int col = Mathf.CeilToInt(info.x);
+            int row = Mathf.CeilToInt(info.y);
+            if (ScrollType == ListScrollType.Horizontal)
+            {
+                col = col > info.x ? --col : col;
+            }
+            else
+            {
+                row = row > info.y ? --row : row;
+            }
+            row = Mathf.Clamp(row, 1, row);
+            col = Mathf.Clamp(col, 1, col);
             return col * row;
         }
     }
@@ -99,11 +153,13 @@ public class VirtualListView : ScrollRect
         get { var info = CalculateVisibleColumnAndRow(); return Mathf.FloorToInt(info.x) * Mathf.FloorToInt(info.y); }
     }
 
+    public IScrollDistanceController ScrollDistanceController { get; set; }
+
     protected override void Awake()
     {
         base.Awake();
 
-        if(content != null && viewport != null)
+        if (content != null && viewport != null)
         {
             m_contentOrignPosition = content.anchoredPosition;
             m_moveAccumulated = m_contentOrignPosition;
@@ -126,6 +182,134 @@ public class VirtualListView : ScrollRect
                 RebuildVisibleItems();
             }
         }
+    }
+
+
+    protected override void OnEnable()
+    {
+        if (m_VirtualVerticalScrollbar)
+            m_VirtualVerticalScrollbar.onValueChanged.AddListener(OnVirtualVerticalScrollBarValueChange);
+        if (m_VirtualHorizontalScrollbar)
+            m_VirtualHorizontalScrollbar.onValueChanged.AddListener(OnVirtualHorizontalScrollBarValueChange);
+        base.OnEnable();
+    }
+
+    protected override void OnDisable()
+    {
+        if (m_VirtualVerticalScrollbar)
+            m_VirtualVerticalScrollbar.onValueChanged.RemoveListener(OnVirtualVerticalScrollBarValueChange);
+        if (m_VirtualHorizontalScrollbar)
+            m_VirtualHorizontalScrollbar.onValueChanged.RemoveListener(OnVirtualHorizontalScrollBarValueChange);
+        base.OnDisable();
+    }
+
+    public override void Rebuild(CanvasUpdate executing)
+    {
+        base.Rebuild(executing);
+
+        if(executing == CanvasUpdate.PostLayout)
+        {
+            UpdateViewportBounds();
+            UpdateVirtualScrollbars(Vector2.zero);
+        }
+    }
+
+    public override void OnBeginDrag(PointerEventData eventData)
+    {
+        base.OnBeginDrag(eventData);
+        m_dragData = eventData;
+    }
+
+    public override void OnEndDrag(PointerEventData eventData)
+    {
+        base.OnEndDrag(eventData);
+        m_dragData = null;
+    }
+
+    protected override void LateUpdate()
+    {
+        base.LateUpdate();
+
+        //UpdateVirtualScollbarSize(content.anchoredPosition);
+    }
+
+
+    private Vector2 UpdateVirtualScollbarSize(Vector2 position)
+    {
+        float deltaTime = Time.unscaledDeltaTime;
+        Vector2 offset = CalculateOffset(Vector2.zero);
+        Vector2 Velocity_t = velocity;
+        for (int axis = 0; axis < 2; axis++)
+        {
+            // Apply spring physics if movement is elastic and content has an offset from the view.
+            if (movementType == MovementType.Elastic && offset[axis] != 0)
+            {
+                float speed = velocity[axis];
+                position[axis] = Mathf.SmoothDamp(content.anchoredPosition[axis], content.anchoredPosition[axis] + offset[axis], ref speed, elasticity, Mathf.Infinity, deltaTime);
+                if (Mathf.Abs(speed) < 1)
+                    speed = 0;
+                Velocity_t[axis] = speed;
+            }
+            // Else move content according to velocity with deceleration applied.
+            else if (inertia)
+            {
+                Velocity_t[axis] *= Mathf.Pow(decelerationRate, deltaTime);
+                if (Mathf.Abs(Velocity_t[axis]) < 1)
+                    Velocity_t[axis] = 0;
+                position[axis] += Velocity_t[axis] * deltaTime;
+            }
+            // If we have neither elaticity or friction, there shouldn't be any velocity.
+            else
+            {
+                Velocity_t[axis] = 0;
+            }
+        }
+
+        if (movementType == MovementType.Clamped)
+        {
+            offset = CalculateOffset(position - content.anchoredPosition);
+            position += offset;
+        }
+        UpdateVirtualScrollbars(offset);
+        return position;
+    }
+
+    private void UpdateVirtualScrollbars(Vector2 offset)
+    {
+        if (m_VirtualHorizontalScrollbar)
+        {
+            if (m_ContentBounds.size.x > 0)
+                m_VirtualHorizontalScrollbar.size = Mathf.Clamp01((m_ViewportBounds.size.x - Mathf.Abs(offset.x)) / m_ContentBounds.size.x);
+            else
+                m_VirtualHorizontalScrollbar.size = 1;
+
+        }
+
+        if (m_VirtualVerticalScrollbar)
+        {
+            if (m_ContentBounds.size.y > 0)
+                m_VirtualVerticalScrollbar.size = Mathf.Clamp01((m_ViewportBounds.size.y - Mathf.Abs(offset.y)) / m_ContentBounds.size.y);
+            else
+                m_VirtualVerticalScrollbar.size = 1;
+
+        }
+    }
+
+    public override void SetLayoutVertical()
+    {
+        base.SetLayoutVertical();
+        m_ViewportBounds = new Bounds(viewRect.rect.center, viewRect.rect.size);
+    }
+    public override void SetLayoutHorizontal()
+    {
+        base.SetLayoutHorizontal();
+
+        m_ViewportBounds = new Bounds(viewRect.rect.center, viewRect.rect.size);
+    }
+
+    protected void UpdateViewportBounds()
+    {
+        m_ViewportBounds = new Bounds(viewRect.rect.center, viewRect.rect.size);
     }
 
 #if UNITY_EDITOR
@@ -182,8 +366,6 @@ public class VirtualListView : ScrollRect
             requireItemCount = ItemCount;
         }
 
-        Debug.Log(requireItemCount);
-
         int newItemCount = requireItemCount - m_items.Count;
         int orderedCont = m_items.Count;
         m_visibleWindow.Clear();
@@ -232,8 +414,12 @@ public class VirtualListView : ScrollRect
 
     public void SetItemCount(int count)
     {
+        //if(m_itemCount != count)
+        //{
+        //    UpdateViewportBounds();
+        //}
+
         m_itemCount = count;
-        SetItemCount_Inner();
         Vector2 columnAndRow = CalculateVisibleColumnAndRow();
         m_visibleColumn = (int)columnAndRow.x;
         m_visibleRow = (int)columnAndRow.y;
@@ -245,31 +431,32 @@ public class VirtualListView : ScrollRect
         {
             m_visibleRow += 1;
         }
-        SetItemCount_Inner();
+        Vector2 newCountSize = SetItemCount_Inner();
         if (m_templet != null)
         {
             RebuildVisibleItems();
         }
-        SetNormalizedPosition(0, (int)ScrollType);
+        //SetNormalizedPosition(0, (int)ScrollType, false);
     }
-    private void SetItemCount_Inner()
+    private Vector2 SetItemCount_Inner()
     {
         Vector2 contentSize = CalculateContentSize(m_itemCount);
         content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, 0, contentSize.x);
         content.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0, contentSize.y);
+        return contentSize;
     }
+
     public GameObject GetItem(int index)
     {
         foreach (var item in m_visibleWindow)
         {
-            if (item.dataIndex == index)
+            if(item.dataIndex == index)
             {
                 return m_items[item.visibleObjIindex].gameObject;
             }
         }
         return null;
     }
-
 
     Vector2 CalculateItemPostion(int maxColumn, int maxRow, int index)
     {
@@ -298,6 +485,11 @@ public class VirtualListView : ScrollRect
         float X = (cellSize.x + spacing.x) * positionX + padding.left;
         float Y = (cellSize.y + spacing.y) * positionY + padding.top;
         return new Vector2(X, Y);
+    }
+
+    public void SetContentPosition(Vector2 position)
+    {
+        SetContentAnchoredPosition(position);
     }
 
     #region Content Size
@@ -336,7 +528,8 @@ public class VirtualListView : ScrollRect
             maxRows = cellCountY;
         }
 
-        float weight = padding.horizontal + (cellSize.x + spacing.x) * maxColumns - spacing.x;
+        //float weight = padding.horizontal + (cellSize.x + spacing.x) * maxColumns - spacing.x;
+       float weight = padding.horizontal + (cellSize.x + spacing.x) * maxColumns ;
         m_maxRow = maxRows;
         m_maxColumn = maxColumns;
 
@@ -362,11 +555,11 @@ public class VirtualListView : ScrollRect
         {
             float width = viewport.rect.width;
             int cellCountX = Mathf.Max(1, Mathf.FloorToInt((width - padding.horizontal + spacing.x + 0.001f) / (cellSize.x + spacing.x)));
-            Debug.LogFormat("width:{0}, {1}", width, cellCountX);
             maxRows = Mathf.CeilToInt(itemCount / (float)cellCountX);
             maxColumns = cellCountX;
         }
-        float height = padding.vertical + (cellSize.y + spacing.y) * maxRows - spacing.y;
+        //float height = padding.vertical + (cellSize.y + spacing.y) * maxRows - spacing.y;
+        float height = padding.vertical + (cellSize.y + spacing.y) * maxRows;
 
         m_maxRow = maxRows;
         m_maxColumn = maxColumns;
@@ -423,25 +616,80 @@ public class VirtualListView : ScrollRect
 
     protected override void SetContentAnchoredPosition(Vector2 position)
     {
-        base.SetContentAnchoredPosition(position);
+        if (ScrollDistanceController != null)
+        {
+            ScrollDistanceController.OnContentPositionChanged(this, position, ApplyContentPosition);
+        }
+        else
+        {
+            base.SetContentAnchoredPosition(position);
+            OnContentPositionChanged();
+        }
 
-        OnContentPositionChanged();
+    }
+
+    public void SetNormalizedPosition(float value, int axis, bool useController)
+    {
+        Vector2 oldValue = normalizedPosition;
+        base.SetNormalizedPosition(value, axis);
+
+        if (ScrollDistanceController != null && useController)
+        {
+            Vector2 position = content.anchoredPosition;
+            base.SetNormalizedPosition(oldValue[axis], axis);
+            ScrollDistanceController.OnContentPositionChanged(this, position, ApplyContentPosition);
+        }
+        else
+        {
+            OnContentPositionChanged();
+        }
     }
     protected override void SetNormalizedPosition(float value, int axis)
     {
+        Vector2 oldValue = normalizedPosition;
         base.SetNormalizedPosition(value, axis);
 
+        if (ScrollDistanceController != null)
+        {
+            Vector2 position = content.anchoredPosition;
+            base.SetNormalizedPosition(oldValue[axis], axis);
+            ScrollDistanceController.OnContentPositionChanged(this, position, ApplyContentPosition);
+        }
+        else
+        {
+            OnContentPositionChanged();
+        }
+    }
+
+    private void ApplyContentPosition(Vector2 position)
+    {
+        base.SetContentAnchoredPosition(position);
         OnContentPositionChanged();
+       
+
+        if (m_dragData != null)
+        {
+            //if in drag update drag start point;
+            OnBeginDrag(m_dragData);
+        }
     }
 
     private void OnContentPositionChanged()
     {
+        UpdateViewportBounds();
+        UpdateVirtualScollbarSize(content.anchoredPosition);
+
         if (!Application.isPlaying || ItemCount == 0) return;
 
         Vector2 moveDistance = content.anchoredPosition - m_contentOrignPosition;
 
         if ((content.anchoredPosition - m_moveAccumulated).sqrMagnitude < 1f) return;
         m_moveAccumulated = content.anchoredPosition;
+
+        if (ScrollDistanceController != null)
+        {
+            ScrollDistanceController.Clear(this);
+        }
 
         float distance = 0f;
         float padding = 0f;
@@ -510,9 +758,64 @@ public class VirtualListView : ScrollRect
         }
     }
 
+    private void OnVirtualVerticalScrollBarValueChange(float value)
+    {
+        SetNormalizedPosition(value, 1);
+    }
+    private void OnVirtualHorizontalScrollBarValueChange(float value)
+    {
+        SetNormalizedPosition(value, 0);
+    }
+
+   
+
+    private Vector2 CalculateOffset(Vector2 delta)
+    {
+        return InternalCalculateOffset(ref m_ViewportBounds, ref m_ContentBounds, horizontal, vertical, movementType, ref delta);
+    }
+
+    internal static Vector2 InternalCalculateOffset(ref Bounds viewBounds, ref Bounds contentBounds, bool horizontal, bool vertical, MovementType movementType, ref Vector2 delta)
+    {
+        Vector2 offset = Vector2.zero;
+        if (movementType == MovementType.Unrestricted)
+            return offset;
+
+        Vector2 min = contentBounds.min;
+        Vector2 max = contentBounds.max;
+
+        if (horizontal)
+        {
+            min.x += delta.x;
+            max.x += delta.x;
+            if (min.x > viewBounds.min.x)
+                offset.x = viewBounds.min.x - min.x;
+            else if (max.x < viewBounds.max.x)
+                offset.x = viewBounds.max.x - max.x;
+        }
+
+        if (vertical)
+        {
+            min.y += delta.y;
+            max.y += delta.y;
+            if (max.y < viewBounds.max.y)
+                offset.y = viewBounds.max.y - max.y;
+            else if (min.y > viewBounds.min.y)
+                offset.y = viewBounds.min.y - min.y;
+        }
+
+        return offset;
+    }
+
+
     private struct VisibleWindowItem
     {
         public int dataIndex;
         public int visibleObjIindex;
     }
+}
+
+public interface IScrollDistanceController
+{
+    void OnContentPositionChanged(VirtualListView view, Vector2 position, Action<Vector2> ApplyContentPosition);
+    void Clear(VirtualListView view);
 }
